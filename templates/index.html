@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic-Tac-Toe</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            margin: 50px auto;
+        }
+        td {
+            width: 100px;
+            height: 100px;
+            font-size: 24px;
+            text-align: center;
+            vertical-align: middle;
+            border: 1px solid black;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h2 style="text-align:center;">Tic-Tac-Toe</h2>
+    <table id="game-board">
+        <tr>
+            <td data-row="0" data-col="0"></td>
+            <td data-row="0" data-col="1"></td>
+            <td data-row="0" data-col="2"></td>
+        </tr>
+        <tr>
+            <td data-row="1" data-col="0"></td>
+            <td data-row="1" data-col="1"></td>
+            <td data-row="1" data-col="2"></td>
+        </tr>
+        <tr>
+            <td data-row="2" data-col="0"></td>
+            <td data-row="2" data-col="1"></td>
+            <td data-row="2" data-col="2"></td>
+        </tr>
+    </table>
+    <script>
+        function makeMove(row, col) {
+            fetch('/move', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({row: row, col: col}),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'win') {
+                    alert('Player ' + data.winner + ' wins!');
+                } else if (data.status === 'draw') {
+                    alert('It\'s a draw!');
+                } else if (data.status === 'invalid') {
+                    alert('Invalid move! Cell already taken.');
+                } else if (data.status === 'continue') {
+                    updateBoard(data.board);
+                }
+            });
+        }
+
+        function updateBoard(board) {
+            const cells = document.querySelectorAll('#game-board td');
+            cells.forEach(cell => {
+                const row = cell.dataset.row;
+                const col = cell.dataset.col;
+                cell.textContent = board[row][col];
+            });
+        }
+
+        // Set up click event listeners for cells
+        document.querySelectorAll('#game-board td').forEach(cell => {
+            cell.addEventListener('click', function() {
+                const row = this.dataset.row;
+                const col = this.dataset.col;
+                makeMove(row, col);
+            });
+        });
+
+        // Fetch initial board state
+        fetch('/board')
+            .then(response => response.json())
+            .then(data => {
+                updateBoard(data.board);
+            });
+    </script>
+</body>
+</html>
