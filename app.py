@@ -273,10 +273,11 @@ game_board = [' ' for _ in range(9)]
 current_player = 'X'
 game_over = False
 winner = None
+status_message = ''
 
 class MyHandler(BaseHTTPRequestHandler):
     def do_GET(self):
-        global current_player, game_board, game_over, winner
+        global current_player, game_board, game_over, winner, status_message
 
         # Extract query parameters from the URL
         query_components = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
@@ -323,14 +324,15 @@ class MyHandler(BaseHTTPRequestHandler):
             board_html += "</tr>"
         board_html += "</table>"
 
+        # Generate the game status message
         status_message = ""
         if game_over and winner:
             status_message = f"<h2>{winner} wins!</h2>"
         elif game_over and winner is None:
             status_message = "<h2>It's a draw!</h2>"
+
         restart_link = '<a href="/?action=restart">Restart Game</a>'
         return f'''
-
             <html>
             <head>
                 <title>Tic-Tac-Toe</title>
@@ -363,14 +365,21 @@ class MyHandler(BaseHTTPRequestHandler):
                 global winner
                 winner = game_board[combo[0]]  # Set the winner
                 return True
+        # Check for a draw (if no empty cells left)
+        if all(cell != ' ' for cell in game_board):
+            global status_message
+            status_message = "<h2>It's a draw!</h2>"
+            return True
+        
         return False
 
     def reset_game(self):
         # Reset the game board, current player, and game state
-        global game_board, current_player, game_over, winner
+        global game_board, current_player, game_over, winner, status_message
         game_board = [' ' for _ in range(9)]
         current_player = 'X'
         game_over = False
+        status_message = ""
         winner = None
 
 def run():
