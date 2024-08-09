@@ -263,9 +263,7 @@ def run():
     httpd.serve_forever()
 
 if __name__ == '__main__':
-    run()
-"""
-# Tic-Tac-Toe game in Python
+    run()"""
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import urllib.parse
@@ -273,21 +271,31 @@ import urllib.parse
 # Initialize the game board and current player
 game_board = [' ' for _ in range(9)]
 current_player = 'X'
+game_over = False
+winner = None
 
 class MyHandler(BaseHTTPRequestHandler):
     def do_GET(self):
-        global current_player
+        global current_player, game_board, game_over, winner
 
         # Extract query parameters from the URL
         query_components = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
-        
+
+        # Handle game reset
+        if 'action' in query_components and query_components['action'][0] == 'restart':
+            self.reset_game()
+            self.send_board()
+            return
+
         # Handle cell clicks
         if 'cell' in query_components:
             cell = int(query_components['cell'][0])
-            if game_board[cell] == ' ':
+            if not game_over and game_board[cell] == ' ':
                 game_board[cell] = current_player  # Update the board with the current player's move
                 if not self.check_win():  # Check if the move resulted in a win
                     self.switch_player()  # Switch to the next player
+                else:
+                    game_over = True  # Set the game as over when a win is detected
             self.send_board()
         else:
             self.send_board()
@@ -307,16 +315,22 @@ class MyHandler(BaseHTTPRequestHandler):
             for j in range(3):
                 cell_index = i * 3 + j
                 cell_value = game_board[cell_index]
-                board_html += f"<td style='width:60px;height:60px;text-align:center;font-size:24px;'>"
-                if cell_value == ' ':
-                    board_html += f"<a href='/?cell={cell_index}' style='display:block;height:100%;width:100%;text-decoration:none;color:black;'>&nbsp;</a>"
+                cell_style = 'width:60px;height:60px;text-align:center;font-size:24px;'
+                if not game_over and cell_value == ' ':
+                    board_html += f"<td style='{cell_style}'><a href='/?cell={cell_index}' style='display:block;height:100%;width:100%;text-decoration:none;color:black;'>&nbsp;</a></td>"
                 else:
-                    board_html += cell_value
-                board_html += "</td>"
+                    board_html += f"<td style='{cell_style}'>{cell_value}</td>"
             board_html += "</tr>"
         board_html += "</table>"
 
+        status_message = ""
+        if game_over and winner:
+            status_message = f"<h2>{winner} wins!</h2>"
+        elif game_over and winner is None:
+            status_message = "<h2>It's a draw!</h2>"
+        restart_link = '<a href="/?action=restart">Restart Game</a>'
         return f'''
+
             <html>
             <head>
                 <title>Tic-Tac-Toe</title>
@@ -324,9 +338,10 @@ class MyHandler(BaseHTTPRequestHandler):
             <body style="text-align: center; padding-top: 50px;">
                 <h1>Tic-Tac-Toe</h1>
                 <h2>Current Player: {current_player}</h2>
+                {status_message}
                 {board_html}
                 <br><br>
-                <a href="/">Restart Game</a>
+                {restart_link}
             </body>
             </html>
         '''
@@ -345,19 +360,18 @@ class MyHandler(BaseHTTPRequestHandler):
         ]
         for combo in winning_combinations:
             if game_board[combo[0]] == game_board[combo[1]] == game_board[combo[2]] != ' ':
-                self.send_win_message(game_board[combo[0]])
+                global winner
+                winner = game_board[combo[0]]  # Set the winner
                 return True
         return False
 
-    def send_win_message(self, winner):
-        self.send_response(200)
-        self.send_header('Content-type', 'text/html')
-        self.end_headers()
-        self.wfile.write(bytes(f"<html><body style='text-align: center; padding-top: 50px;'><h1>{winner} wins!</h1></body></html>", 'utf-8'))
-        self.wfile.write(bytes('<a href="/">Play again</a>', 'utf-8'))
-        global game_board, current_player
-        game_board = [' ' for _ in range(9)]  # Reset the board
-        current_player = 'X'  # Reset the current player
+    def reset_game(self):
+        # Reset the game board, current player, and game state
+        global game_board, current_player, game_over, winner
+        game_board = [' ' for _ in range(9)]
+        current_player = 'X'
+        game_over = False
+        winner = None
 
 def run():
     print('Starting server...')
