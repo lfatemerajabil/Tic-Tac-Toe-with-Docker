@@ -8,7 +8,7 @@ The game board will look like the below image.
 
 ## Run the following commands
 
-step 1: log in to your docker
+Log in to your docker
 
 ```
 docker login
@@ -16,26 +16,26 @@ docker login
 
 ## Method 1: using docker
 
-step 2: build your docker image
+Build your docker image
 
 ```
 docker build -t <your_image_name> .
 ```
 
-step 3: run your image and make a container
+Run your image and make a container
 
 ```
 docker run -d -p 8080:8080 <your_image_name>
 ```
 
-step 4: got to http://localhost:8080/
+Go to http://localhost:8080/
 
 ## Method 2: using docker-compose
 
-step2: run docker-compose file
+Run docker-compose file
 
 ```
 docker-compose up
 ```
 
-step 3: got to http://localhost:8080/
+Go to http://localhost:8080/
